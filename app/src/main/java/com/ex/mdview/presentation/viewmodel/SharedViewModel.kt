@@ -14,19 +14,30 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel для обмена данными и состояниями между фрагментами.
+ * Посредник между UI и доменным слоем ([Use Cases]).
+ *
+ * @param loadMarkdownDocumentUseCase Use Case для загрузки.
+ * @param saveMarkdownDocumentUseCase Use Case для сохранения.
+ * @param renderMarkdownUseCase Use Case для рендеринга.
+ */
 class SharedViewModel(
     private val loadMarkdownDocumentUseCase: LoadMarkdownDocumentUseCase,
     private val saveMarkdownDocumentUseCase: SaveMarkdownDocumentUseCase,
     private val renderMarkdownUseCase: RenderMarkdownUseCase
 ) : ViewModel() {
 
+    //Хранение необработанного содержимого Markdown-документа.
     private val _documentContent = MutableStateFlow<String>("")
     val documentContent: StateFlow<String> = _documentContent.asStateFlow()
 
+    //Хранение списка MarkdownElement, которые готовы для нативного отображения в UI.
     private val _renderedMarkdownElements = MutableStateFlow<List<MarkdownElement>>(emptyList())
     val renderedMarkdownElements: StateFlow<List<MarkdownElement>> =
         _renderedMarkdownElements.asStateFlow()
 
+    //Отслеживание статуса операции загрузки документа.
     private val _loadStatus = MutableStateFlow<LoadStatus>(LoadStatus.Idle)
     val loadStatus: StateFlow<LoadStatus> = _loadStatus.asStateFlow()
 
@@ -34,7 +45,8 @@ class SharedViewModel(
 //    val saveStatus: StateFlow<LoadStatus> = _saveStatus.asStateFlow()
 
     /**
-     * Загружает локальный файл по URI.
+     * Инициирует загрузку Markdown-документа из локального файла.
+     * @param uri URI локального файла.
      */
     fun loadLocalFile(uri: Uri) {
         viewModelScope.launch {
@@ -58,7 +70,8 @@ class SharedViewModel(
     }
 
     /**
-     * Загружает документ по URL.
+     * Инициирует загрузку Markdown-документа по URL из сети.
+     * @param url URL Markdown-документа.
      */
     fun loadFromUrl(url: String) {
         viewModelScope.launch {
@@ -100,8 +113,10 @@ class SharedViewModel(
 //    }
 
     /**
-     * Внутренняя функция для рендеринга Markdown-текста в список элементов.
-     * Вызывается после загрузки или изменения содержимого.
+     * Вспомогательная функция для преобразования сырого Markdown-текста в список объектов
+     * MarkdownElement.
+     * Результат затем обновляет _renderedMarkdownElements, за которым наблюдает UI.
+     * @param markdownText Сырой Markdown-текст.
      */
     private fun renderAndDisplayMarkdown(markdownText: String) {
         val elements = renderMarkdownUseCase(markdownText)

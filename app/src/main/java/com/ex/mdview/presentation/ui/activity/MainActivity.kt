@@ -7,6 +7,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.ex.mdview.databinding.ActivityMainBinding
 
+/**
+ * Главная активность приложения.
+ * Служит контейнером для фрагментов [UploadFragment], [EditFragment] и [ViewFragment]
+ * с использованием Navigation Component.
+ */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding

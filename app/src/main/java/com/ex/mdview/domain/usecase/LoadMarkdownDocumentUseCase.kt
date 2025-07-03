@@ -5,6 +5,13 @@ import com.ex.mdview.domain.model.MarkdownSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
+/**
+ * Use Case: Загрузка Markdown-документа.
+ * Инкапсулирует бизнес-логику, связанную с получением Markdown-контента
+ * из различных источников (локальный файл или URL).
+ * @param markdownRepository Реализация интерфейса MarkdownRepository,
+ * которая предоставляет методы для доступа к данным.
+ */
 class LoadMarkdownDocumentUseCase(
     private val markdownRepository: MarkdownRepository
 ) {

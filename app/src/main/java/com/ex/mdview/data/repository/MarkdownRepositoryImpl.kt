@@ -11,10 +11,26 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.net.URL
 
+/**
+ * Реализация интерфейса [MarkdownRepository].
+ * Отвечает за фактическое взаимодействие с источниками данных:
+ * - Чтение файлов из локальной файловой системы Android
+ * - Загрузка данных по URL
+ * - Сохранение данных в локальный файл
+ *
+ * @param context Контекст приложения
+ */
 class MarkdownRepositoryImpl(
     private val context: Context
 ) : MarkdownRepository {
 
+    /**
+     * Загружает содержимое Markdown-документа по заданному URL.
+     *
+     * @param url URL-адрес Markdown-документа.
+     * @return Строка с содержимым Markdown.
+     * @throws IOException В случае проблем с сетью, чтением потока или некорректным HTTP-ответом.
+     */
     override suspend fun getMarkdownContentFromUrl(url: String): String =
         withContext(Dispatchers.IO) {
             try {
@@ -28,6 +44,14 @@ class MarkdownRepositoryImpl(
             }
         }
 
+    /**
+     * Загружает содержимое Markdown-документа из локального файла по заданному URI.
+     *
+     * @param uri URI локального файла.
+     * @return Строка с содержимым Markdown.
+     * @throws FileNotFoundException Если файл не найден по указанному URI.
+     * @throws IOException В случае других проблем при чтении файла.
+     */
     override suspend fun getMarkdownContentFromFile(uri: Uri): String =
         withContext(Dispatchers.IO) {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -37,6 +61,14 @@ class MarkdownRepositoryImpl(
             } ?: throw FileNotFoundException("Файл не найден по URI: $uri")
         }
 
+    /**
+     * Сохраняет предоставленное содержимое Markdown в локальный файл.
+     *
+     * @param content Строка с содержимым Markdown для сохранения.
+     * @param documentId Необязательный идентификатор (имя файла) для сохранения.
+     * Если null, будет сгенерировано уникальное имя файла.
+     * @throws IOException В случае проблем при записи в файл.
+     */
     override suspend fun saveMarkdownContent(content: String, documentId: String?) =
         withContext(Dispatchers.IO) {
             val fileName = documentId ?: "new_markdown_document_${System.currentTimeMillis()}.md"

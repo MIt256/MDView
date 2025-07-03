@@ -23,6 +23,11 @@ import com.ex.mdview.databinding.FragmentUploadBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+/**
+ * Фрагмент для загрузки Markdown-документов.
+ * Предоставляет UI для выбора локального файла или ввода URL для загрузки Markdown.
+ * Взаимодействует с [SharedViewModel] для выполнения операций загрузки и отслеживания статуса.
+ */
 class UploadFragment : Fragment() {
 
     private var _binding: FragmentUploadBinding? = null
@@ -92,6 +97,11 @@ class UploadFragment : Fragment() {
         filePickerLauncher.launch(intent)
     }
 
+    /**
+     * Проверяет, является ли выбранный файл Markdown-файлом по его URI.
+     * @param uri URI файла.
+     * @return true, если файл является Markdown, иначе false.
+     */
     private fun isMarkdownFile(uri: Uri): Boolean {
         val mimeType = context?.contentResolver?.getType(uri)
         if (mimeType == "text/markdown" || mimeType == "text/x-markdown") {
@@ -100,6 +110,9 @@ class UploadFragment : Fragment() {
         return uri.path?.endsWith(".md", ignoreCase = true) ?: false
     }
 
+    /**
+     * Вызывает загрузку документа из интернета по URL, введенному пользователем.
+     */
     private fun loadFromUrl() {
         val url = binding.url.text.toString()
         if (url.isNotBlank()) {
@@ -109,6 +122,9 @@ class UploadFragment : Fragment() {
         }
     }
 
+    /**
+     * Наблюдает за состоянием [LoadStatus] в [SharedViewModel]
+     */
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -147,6 +163,10 @@ class UploadFragment : Fragment() {
         }
     }
 
+    /**
+     * Вспомогательная функция для отображения короткого сообщения об ошибке (Toast).
+     * @param message Сообщение об ошибке.
+     */
     private fun showStatus(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }

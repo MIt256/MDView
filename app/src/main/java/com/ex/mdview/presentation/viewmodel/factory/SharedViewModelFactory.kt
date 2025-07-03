@@ -9,8 +9,19 @@ import com.ex.mdview.domain.usecase.LoadMarkdownDocumentUseCase
 import com.ex.mdview.domain.usecase.RenderMarkdownUseCase
 import com.ex.mdview.domain.usecase.SaveMarkdownDocumentUseCase
 
+/**
+ * Пользовательская фабрика для создания экземпляров [SharedViewModel].
+ * @param application Экземпляр Application, который необходим для инициализации
+ * [MarkdownRepositoryImpl]
+ */
 class SharedViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
 
+    /**
+     * Создает новый экземпляр ViewModel указанного класса.
+     * @param modelClass Класс ViewModel, который нужно создать.
+     * @return Экземпляр ViewModel.
+     * @throws IllegalArgumentException Если передан класс, который не является [SharedViewModel].
+     */
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SharedViewModel::class.java)) {

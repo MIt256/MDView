@@ -2,6 +2,9 @@ package com.ex.mdview.data.repository
 
 import android.net.Uri
 
+/**
+ * Интерфейс репозитория для работы с Markdown-документами.
+ */
 interface MarkdownRepository {
     /**
      * Получает содержимое Markdown из указанного URL.

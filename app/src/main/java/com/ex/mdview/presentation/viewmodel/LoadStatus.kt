@@ -1,5 +1,8 @@
 package com.ex.mdview.presentation.viewmodel
 
+/**
+ * 'Sealed class' для представления различных состояний операции загрузки документа.
+ */
 sealed class LoadStatus {
     object Idle : LoadStatus()
     object Loading : LoadStatus()

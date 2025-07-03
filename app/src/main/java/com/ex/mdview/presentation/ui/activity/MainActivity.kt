@@ -1,4 +1,4 @@
-package com.ex.mdview
+package com.ex.mdview.presentation.ui.activity
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

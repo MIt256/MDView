@@ -5,4 +5,6 @@
     <string name="button_upload_local">Выбрать локальный файл</string>
     <string name="button_upload_web">Получить по ссылке</string>
     <string name="address_hint">ссылка на файл</string>
+    <string name="button_edit">Редактировать файл</string>
+    <string name="button_view">Просмотр файла</string>
 </resources>

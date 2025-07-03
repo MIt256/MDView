@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/uploadFragment"
-        android:name="com.ex.mdview.UploadFragment"
+        android:name="com.ex.mdview.presentation.ui.fragment.UploadFragment"
         android:label="fragment_upload"
         tools:layout="@layout/fragment_upload" >
         <action
@@ -19,12 +19,12 @@
     </fragment>
     <fragment
         android:id="@+id/editFragment"
-        android:name="com.ex.mdview.EditFragment"
+        android:name="com.ex.mdview.presentation.ui.fragment.EditFragment"
         android:label="fragment_edit"
         tools:layout="@layout/fragment_edit" />
     <fragment
         android:id="@+id/viewFragment"
-        android:name="com.ex.mdview.ViewFragment"
+        android:name="com.ex.mdview.presentation.ui.fragment.ViewFragment"
         android:label="fragment_view"
         tools:layout="@layout/fragment_view" />
 </navigation>

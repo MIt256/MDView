@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.navigation.safeargs)
 }
 
 android {
@@ -51,4 +52,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)
+    implementation(libs.lifecycle.viewmodel.ktx)
+    implementation(libs.fragment.ktx)
+
 }

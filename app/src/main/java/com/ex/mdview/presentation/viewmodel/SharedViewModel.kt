@@ -41,8 +41,17 @@ class SharedViewModel(
     private val _loadStatus = MutableStateFlow<LoadStatus>(LoadStatus.Idle)
     val loadStatus: StateFlow<LoadStatus> = _loadStatus.asStateFlow()
 
-//    private val _saveStatus = MutableStateFlow<LoadStatus>(LoadStatus.Idle)
-//    val saveStatus: StateFlow<LoadStatus> = _saveStatus.asStateFlow()
+    private val _saveStatus = MutableStateFlow<LoadStatus>(LoadStatus.Idle)
+    val saveStatus: StateFlow<LoadStatus> = _saveStatus.asStateFlow()
+
+    /**
+     * Устанавливает новое содержимое документа в ViewModel.
+     * @param content Новая строка содержимого Markdown.
+     */
+    fun setContent(content: String) {
+        _documentContent.value = content
+        renderAndDisplayMarkdown(content)
+    }
 
     /**
      * Инициирует загрузку Markdown-документа из локального файла.

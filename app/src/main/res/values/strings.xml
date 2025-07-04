@@ -7,4 +7,6 @@
     <string name="address_hint">ссылка на файл</string>
     <string name="button_edit">Редактировать файл</string>
     <string name="button_view">Просмотр файла</string>
+    <string name="button_save">Сохранить</string>
+    <string name="markdown_here">Markdown здесь...</string>
 </resources>

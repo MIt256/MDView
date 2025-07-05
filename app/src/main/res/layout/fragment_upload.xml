@@ -83,6 +83,7 @@
         android:layout_height="100dp"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="24dp"
+        android:contentDescription="@string/status_description"
         android:visibility="invisible"
         android:src="@drawable/good_status"
         app:layout_constraintBottom_toTopOf="@+id/view_fragment_button"

@@ -26,10 +26,9 @@ class SaveMarkdownDocumentUseCase(
      */
     operator fun invoke(content: String, targetSource: MarkdownSource? = null): Flow<Result<Unit>> = flow {
         try {
-            // НОВОЕ: В зависимости от targetSource вызываем нужный метод репозитория
             when (targetSource) {
                 is MarkdownSource.LocalFile -> markdownRepository.saveMarkdownContentToFile(content, targetSource.uri)
-                else -> markdownRepository.saveNewMarkdownContent(content) // Для URL или нового файла
+                else -> markdownRepository.saveNewMarkdownContent(content)
             }
             emit(Result.success(Unit))
         } catch (e: Exception) {

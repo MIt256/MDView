@@ -15,11 +15,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import com.ex.mdview.presentation.viewmodel.OperationStatus
 import com.ex.mdview.R
+import com.ex.mdview.databinding.FragmentUploadBinding
+import com.ex.mdview.presentation.viewmodel.OperationStatus
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
-import com.ex.mdview.databinding.FragmentUploadBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -40,10 +40,16 @@ class UploadFragment : Fragment() {
                 if (isMarkdownFile(uri)) {
                     sharedViewModel.loadLocalFile(uri)
                 } else {
-                    showStatus("Выберите файл с расширением .md")
+                    showMessage("Выберите файл с расширением .md")
                 }
             }
         }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val factory = SharedViewModelFactory(requireActivity().application)
+        sharedViewModel = ViewModelProvider(requireActivity(), factory)[SharedViewModel::class.java]
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,17 +59,24 @@ class UploadFragment : Fragment() {
         return binding.root
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val factory = SharedViewModelFactory(requireActivity().application)
-        sharedViewModel = ViewModelProvider(requireActivity(), factory)[SharedViewModel::class.java]
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         with(binding) {
-            localButton.setOnClickListener { openFilePicker() }
+            localButton.setOnClickListener {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "text/markdown"
+                    putExtra(
+                        Intent.EXTRA_MIME_TYPES, arrayOf(
+                            "text/markdown", "text/x-markdown",
+                            "application/octet-stream", "text/plain"
+                        )
+                    )
+
+                }
+                filePickerLauncher.launch(intent)
+            }
             webButton.setOnClickListener { loadFromUrl() }
             viewFragmentButton.setOnClickListener {
                 findNavController().navigate(
@@ -80,23 +93,6 @@ class UploadFragment : Fragment() {
         observeViewModel()
     }
 
-    private fun openFilePicker() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/markdown"
-            putExtra(
-                Intent.EXTRA_MIME_TYPES, arrayOf(
-                    "text/markdown",
-                    "text/x-markdown",
-                    "application/octet-stream",
-                    "text/plain"
-                )
-            )
-
-        }
-        filePickerLauncher.launch(intent)
-    }
-
     /**
      * Проверяет, является ли выбранный файл Markdown-файлом по его URI.
      * @param uri URI файла.
@@ -107,7 +103,8 @@ class UploadFragment : Fragment() {
         if (mimeType == "text/markdown" || mimeType == "text/x-markdown") {
             return true
         }
-        return uri.path?.endsWith(".md", ignoreCase = true) ?: false
+        return uri.path?.endsWith(".md", ignoreCase = true) ?: false ||
+                uri.path?.endsWith(".markdown", ignoreCase = true) ?: false
     }
 
     /**
@@ -128,35 +125,40 @@ class UploadFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sharedViewModel.operationStatus.collectLatest { status ->
-                    when (status) {
-                        OperationStatus.Idle -> {
-                            binding.editFragmentButton.visibility = View.INVISIBLE
-                            binding.viewFragmentButton.visibility = View.INVISIBLE
-                            binding.imageView.visibility = View.INVISIBLE
-                        }
+                launch {
+                    sharedViewModel.operationStatus.collectLatest { status ->
+                        when (status) {
+                            OperationStatus.Idle -> {
+                                binding.editFragmentButton.visibility = View.INVISIBLE
+                                binding.viewFragmentButton.visibility = View.INVISIBLE
+                                binding.imageView.visibility = View.INVISIBLE
+                            }
 
-                        OperationStatus.Loading -> {
-                            binding.editFragmentButton.visibility = View.INVISIBLE
-                            binding.viewFragmentButton.visibility = View.INVISIBLE
-                            binding.imageView.visibility = View.INVISIBLE
-                        }
+                            OperationStatus.Loading -> {
+                                binding.editFragmentButton.visibility = View.INVISIBLE
+                                binding.viewFragmentButton.visibility = View.INVISIBLE
+                                binding.imageView.visibility = View.INVISIBLE
+                            }
 
-                        OperationStatus.Success -> {
-                            binding.editFragmentButton.visibility = View.VISIBLE
-                            binding.viewFragmentButton.visibility = View.VISIBLE
-                            binding.imageView.visibility = View.VISIBLE
-                            binding.imageView.setImageResource(R.drawable.good_status)
-                            showStatus("Документ успешно загружен!")
-                        }
+                            OperationStatus.Success -> {
+                                binding.editFragmentButton.visibility = View.VISIBLE
+                                binding.viewFragmentButton.visibility = View.VISIBLE
+                                binding.imageView.visibility = View.VISIBLE
+                                binding.imageView.setImageResource(R.drawable.good_status)
+                            }
 
-                        is OperationStatus.Error -> {
-                            binding.editFragmentButton.visibility = View.VISIBLE
-                            binding.viewFragmentButton.visibility = View.VISIBLE
-                            binding.imageView.visibility = View.VISIBLE
-                            binding.imageView.setImageResource(R.drawable.error_status)
-                            showStatus(status.message)
+                            is OperationStatus.Error -> {
+                                binding.editFragmentButton.visibility = View.INVISIBLE
+                                binding.viewFragmentButton.visibility = View.INVISIBLE
+                                binding.imageView.visibility = View.VISIBLE
+                                binding.imageView.setImageResource(R.drawable.error_status)
+                            }
                         }
+                    }
+                }
+                launch {
+                    sharedViewModel.oneTimeMessage.collectLatest { message ->
+                        showMessage(message)
                     }
                 }
             }
@@ -164,11 +166,11 @@ class UploadFragment : Fragment() {
     }
 
     /**
-     * Вспомогательная функция для отображения короткого сообщения об ошибке (Toast).
-     * @param message Сообщение об ошибке.
+     * Вспомогательная функция для отображения короткого сообщений (Toast).
+     * @param message Сообщение.
      */
-    private fun showStatus(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    private fun showMessage(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroyView() {

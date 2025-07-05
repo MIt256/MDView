@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.ex.mdview.R
 import com.ex.mdview.databinding.FragmentViewBinding
 import com.ex.mdview.domain.model.MarkdownElement
+import com.ex.mdview.presentation.util.MarkdownTextFormatter
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
 import kotlinx.coroutines.Dispatchers
@@ -40,11 +41,13 @@ class ViewFragment : Fragment() {
     private var _binding: FragmentViewBinding? = null
     private val binding get() = _binding!!
     private lateinit var sharedViewModel: SharedViewModel
+    private lateinit var markdownTextFormatter: MarkdownTextFormatter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val factory = SharedViewModelFactory(requireActivity().application)
         sharedViewModel = ViewModelProvider(requireActivity(), factory)[SharedViewModel::class.java]
+        markdownTextFormatter = MarkdownTextFormatter()
     }
 
     override fun onCreateView(
@@ -108,7 +111,7 @@ class ViewFragment : Fragment() {
 
                 is MarkdownElement.Paragraph -> {
                     val textView = TextView(context).apply {
-                        text = element.text
+                        text = markdownTextFormatter.formatInlineText(element.text)
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,

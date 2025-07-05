@@ -8,8 +8,11 @@ import com.ex.mdview.domain.model.MarkdownSource
 import com.ex.mdview.domain.usecase.LoadMarkdownDocumentUseCase
 import com.ex.mdview.domain.usecase.RenderMarkdownUseCase
 import com.ex.mdview.domain.usecase.SaveMarkdownDocumentUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -37,13 +40,21 @@ class SharedViewModel(
     val renderedMarkdownElements: StateFlow<List<MarkdownElement>> =
         _renderedMarkdownElements.asStateFlow()
 
-    //Отслеживание статуса действий.
+    // StateFlow для статуса операции, который может иметь постоянное состояние
     private val _operationStatus = MutableStateFlow<OperationStatus>(OperationStatus.Idle)
     val operationStatus: StateFlow<OperationStatus> = _operationStatus.asStateFlow()
+
+    // SharedFlow для одноразовых сообщений
+    private val _oneTimeMessage = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
+    val oneTimeMessage: SharedFlow<String> = _oneTimeMessage.asSharedFlow()
 
     //Отслеживание источника текущего документа. Null, если это новый документ.
     private val _currentDocumentSource = MutableStateFlow<MarkdownSource?>(null)
     val currentDocumentSource: StateFlow<MarkdownSource?> = _currentDocumentSource.asStateFlow()
+
+    init {
+        renderAndDisplayMarkdown(_documentContent.value)
+    }
 
     /**
      * Устанавливает новое содержимое документа в ViewModel.
@@ -69,12 +80,13 @@ class SharedViewModel(
                             renderAndDisplayMarkdown(content)
                             _operationStatus.value = OperationStatus.Success
                             _currentDocumentSource.value = MarkdownSource.LocalFile(uri)
+                            _oneTimeMessage.emit("Документ успешно загружен!")
                         }
                         .onFailure { throwable ->
-                            _operationStatus.value = OperationStatus.Error(
-                                throwable.localizedMessage
-                                    ?: "Неизвестная ошибка при загрузке файла."
-                            )
+                            _operationStatus.value = OperationStatus.Idle
+                            val message =
+                                throwable.localizedMessage ?: "Неизвестная ошибка загрузки файла."
+                            _oneTimeMessage.emit(message)
                             _currentDocumentSource.value = null
                         }
                 }
@@ -96,11 +108,13 @@ class SharedViewModel(
                             renderAndDisplayMarkdown(content)
                             _operationStatus.value = OperationStatus.Success
                             _currentDocumentSource.value = null
+                            _oneTimeMessage.emit("Документ успешно загружен из URL!")
                         }
                         .onFailure { throwable ->
-                            _operationStatus.value = OperationStatus.Error(
-                                throwable.localizedMessage ?: "Неизвестная ошибка при загрузке URL."
-                            )
+                            _operationStatus.value = OperationStatus.Idle
+                            val message =
+                                throwable.localizedMessage ?: "Неизвестная ошибка загрузки URL."
+                            _oneTimeMessage.emit(message)
                             _currentDocumentSource.value = null
                         }
                 }
@@ -115,6 +129,7 @@ class SharedViewModel(
     fun saveCurrentDocument() {
         viewModelScope.launch {
             _operationStatus.value = OperationStatus.Loading
+            _oneTimeMessage.emit("Сохранение...")
             val sourceToSaveTo: MarkdownSource? =
                 when (val currentSource = _currentDocumentSource.value) {
                     is MarkdownSource.LocalFile -> currentSource
@@ -128,18 +143,18 @@ class SharedViewModel(
                         result
                             .onSuccess {
                                 _operationStatus.value = OperationStatus.Success
+                                _oneTimeMessage.emit("Документ успешно сохранен!")
                             }
                             .onFailure { throwable ->
-                                _operationStatus.value = OperationStatus.Error(
-                                    throwable.localizedMessage ?: "Неизвестная ошибка сохранения"
-                                )
+                                _operationStatus.value = OperationStatus.Idle
+                                val message =
+                                    throwable.localizedMessage ?: "Неизвестная ошибка сохранения."
+                                _oneTimeMessage.emit(message)
                             }
                     }
             } catch (e: Exception) {
-                _operationStatus.value =
-                    OperationStatus.Error(
-                        e.localizedMessage ?: "Ошибка при инициализации сохранения"
-                    )
+                _operationStatus.value = OperationStatus.Idle
+                _oneTimeMessage.emit(e.localizedMessage ?: "Ошибка при инициализации сохранения.")
             }
         }
     }

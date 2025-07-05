@@ -58,29 +58,33 @@ class EditFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sharedViewModel.operationStatus.collectLatest { status ->
-                    when (status) {
-                        OperationStatus.Idle -> {
-                        }
+                launch {
+                    sharedViewModel.operationStatus.collectLatest { status ->
+                        when (status) {
+                            OperationStatus.Idle -> {
+                                binding.saveButton.isEnabled = true
+                            }
 
-                        OperationStatus.Loading -> {
-                            Toast.makeText(context, "Сохранение...", Toast.LENGTH_SHORT).show()
-                        }
+                            OperationStatus.Loading -> {
+                                binding.saveButton.isEnabled = false
+                            }
 
-                        OperationStatus.Success -> {
-                            Toast.makeText(context, "Сохранено успешно!", Toast.LENGTH_SHORT).show()
+                            OperationStatus.Success -> {
+                                binding.saveButton.isEnabled = true
+                            }
 
-                        }
-
-                        is OperationStatus.Error -> {
-                            Toast.makeText(
-                                context,
-                                "Ошибка сохранения: ${status.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            is OperationStatus.Error -> {
+                                binding.saveButton.isEnabled = true
+                            }
                         }
                     }
                 }
+                launch {
+                    sharedViewModel.oneTimeMessage.collectLatest { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
             }
         }
 

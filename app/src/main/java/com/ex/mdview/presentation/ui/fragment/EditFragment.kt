@@ -10,8 +10,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import com.ex.mdview.databinding.FragmentEditBinding
-import com.ex.mdview.presentation.viewmodel.LoadStatus
+import com.ex.mdview.presentation.viewmodel.OperationStatus
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
 import kotlinx.coroutines.flow.collectLatest
@@ -57,20 +58,21 @@ class EditFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sharedViewModel.saveStatus.collectLatest { status ->
+                sharedViewModel.operationStatus.collectLatest { status ->
                     when (status) {
-                        LoadStatus.Idle -> {
+                        OperationStatus.Idle -> {
                         }
 
-                        LoadStatus.Loading -> {
+                        OperationStatus.Loading -> {
                             Toast.makeText(context, "Сохранение...", Toast.LENGTH_SHORT).show()
                         }
 
-                        LoadStatus.Success -> {
+                        OperationStatus.Success -> {
                             Toast.makeText(context, "Сохранено успешно!", Toast.LENGTH_SHORT).show()
+
                         }
 
-                        is LoadStatus.Error -> {
+                        is OperationStatus.Error -> {
                             Toast.makeText(
                                 context,
                                 "Ошибка сохранения: ${status.message}",
@@ -85,7 +87,8 @@ class EditFragment : Fragment() {
         binding.saveButton.setOnClickListener {
             val editedContent = binding.editTextContent.text.toString()
             sharedViewModel.setContent(editedContent)
-            //todo add save
+            sharedViewModel.saveCurrentDocument()
+            findNavController().popBackStack()
         }
     }
 

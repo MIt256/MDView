@@ -15,7 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import com.ex.mdview.presentation.viewmodel.LoadStatus
+import com.ex.mdview.presentation.viewmodel.OperationStatus
 import com.ex.mdview.R
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
@@ -123,26 +123,26 @@ class UploadFragment : Fragment() {
     }
 
     /**
-     * Наблюдает за состоянием [LoadStatus] в [SharedViewModel]
+     * Наблюдает за состоянием [OperationStatus] в [SharedViewModel]
      */
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sharedViewModel.loadStatus.collectLatest { status ->
+                sharedViewModel.operationStatus.collectLatest { status ->
                     when (status) {
-                        LoadStatus.Idle -> {
+                        OperationStatus.Idle -> {
                             binding.editFragmentButton.visibility = View.INVISIBLE
                             binding.viewFragmentButton.visibility = View.INVISIBLE
                             binding.imageView.visibility = View.INVISIBLE
                         }
 
-                        LoadStatus.Loading -> {
+                        OperationStatus.Loading -> {
                             binding.editFragmentButton.visibility = View.INVISIBLE
                             binding.viewFragmentButton.visibility = View.INVISIBLE
                             binding.imageView.visibility = View.INVISIBLE
                         }
 
-                        LoadStatus.Success -> {
+                        OperationStatus.Success -> {
                             binding.editFragmentButton.visibility = View.VISIBLE
                             binding.viewFragmentButton.visibility = View.VISIBLE
                             binding.imageView.visibility = View.VISIBLE
@@ -150,7 +150,7 @@ class UploadFragment : Fragment() {
                             showStatus("Документ успешно загружен!")
                         }
 
-                        is LoadStatus.Error -> {
+                        is OperationStatus.Error -> {
                             binding.editFragmentButton.visibility = View.VISIBLE
                             binding.viewFragmentButton.visibility = View.VISIBLE
                             binding.imageView.visibility = View.VISIBLE

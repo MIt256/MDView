@@ -1,6 +1,7 @@
 package com.ex.mdview.domain.usecase
 
 import com.ex.mdview.data.repository.MarkdownRepository
+import com.ex.mdview.domain.model.MarkdownSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -16,14 +17,20 @@ class SaveMarkdownDocumentUseCase(
     private val markdownRepository: MarkdownRepository
 ) {
     /**
-     * Сохраняет Markdown-документ.
-     * @param content Содержимое Markdown для сохранения.
-     * @param documentId Идентификатор документа (для обновления существующего), null для нового.
-     * @return Flow<Result<Unit>> с успехом или ошибкой.
+     * Сохраняет [content] Markdown.
+     * @param content Строка Markdown для сохранения.
+     * @param targetSource Необязательный [MarkdownSource], указывающий куда сохранить.
+     * Если [MarkdownSource.LocalFile], то перезаписывается по этому URI.
+     * Если null или [MarkdownSource.Url], сохраняется как новый файл.
+     * @return [Flow] с [Result] операции сохранения.
      */
-    operator fun invoke(content: String, documentId: String? = null): Flow<Result<Unit>> = flow {
+    operator fun invoke(content: String, targetSource: MarkdownSource? = null): Flow<Result<Unit>> = flow {
         try {
-            markdownRepository.saveMarkdownContent(content, documentId)
+            // НОВОЕ: В зависимости от targetSource вызываем нужный метод репозитория
+            when (targetSource) {
+                is MarkdownSource.LocalFile -> markdownRepository.saveMarkdownContentToFile(content, targetSource.uri)
+                else -> markdownRepository.saveNewMarkdownContent(content) // Для URL или нового файла
+            }
             emit(Result.success(Unit))
         } catch (e: Exception) {
             emit(Result.failure(e))

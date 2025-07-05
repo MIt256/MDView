@@ -23,10 +23,17 @@ interface MarkdownRepository {
     suspend fun getMarkdownContentFromFile(uri: Uri): String
 
     /**
-     * Сохраняет содержимое Markdown.
+     * Сохраняет содержимое Markdown (новый файл).
      * @param content Содержимое для сохранения.
-     * @param documentId Идентификатор документа для обновления, null для нового.
      * @throws Exception в случае ошибки сохранения.
      */
-    suspend fun saveMarkdownContent(content: String, documentId: String? = null)
+    suspend fun saveNewMarkdownContent(content: String)
+
+    /**
+     * Сохраняет содержимое Markdown (существующий файл).
+     * @param content Содержимое для сохранения.
+     * @param uri URI локального файла.
+     * @throws Exception в случае ошибки сохранения.
+     */
+    suspend fun saveMarkdownContentToFile(content: String, uri: Uri)
 }

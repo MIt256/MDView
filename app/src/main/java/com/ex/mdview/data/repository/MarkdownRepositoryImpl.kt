@@ -62,19 +62,45 @@ class MarkdownRepositoryImpl(
         }
 
     /**
-     * Сохраняет предоставленное содержимое Markdown в локальный файл.
-     *
+     * Сохраняет предоставленное содержимое Markdown в новый локальный файл.
+     * Генерирует уникальное имя файла.
      * @param content Строка с содержимым Markdown для сохранения.
-     * @param documentId Необязательный идентификатор (имя файла) для сохранения.
-     * Если null, будет сгенерировано уникальное имя файла.
      * @throws IOException В случае проблем при записи в файл.
      */
-    override suspend fun saveMarkdownContent(content: String, documentId: String?) =
+    override suspend fun saveNewMarkdownContent(content: String): Unit =
         withContext(Dispatchers.IO) {
-            val fileName = documentId ?: "new_markdown_document_${System.currentTimeMillis()}.md"
+            val fileName =
+                "new_markdown_document_${System.currentTimeMillis()}.md"
             val outputDir = context.filesDir
             val file = File(outputDir, fileName)
 
-            file.writeText(content)
+            try {
+                file.writeText(content)
+            } catch (e: Exception) {
+                throw IOException(
+                    "Error saving new file: ${e.localizedMessage ?: "Unknown error"}", e
+                )
+            }
+        }
+
+    /**
+     * Перезаписывает содержимое существующего Markdown-файла по [uri].
+     * @param content Строка с содержимым Markdown для сохранения.
+     * @param uri URI файла, который нужно перезаписать.
+     * @throws IOException В случае проблем при записи в файл.
+     */
+    override suspend fun saveMarkdownContentToFile(content: String, uri: Uri): Unit =
+        withContext(Dispatchers.IO) {
+            try {
+                context.contentResolver.openOutputStream(uri, "wt")?.use { outputStream ->
+                    outputStream.write(content.toByteArray())
+                } ?: run {
+                    throw IOException("Could not open output stream for URI: $uri")
+                }
+            } catch (e: Exception) {
+                throw IOException(
+                    "Error overwriting file: ${e.localizedMessage ?: "Unknown error"}", e
+                )
+            }
         }
 }

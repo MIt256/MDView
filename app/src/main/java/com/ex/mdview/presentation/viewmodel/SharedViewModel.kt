@@ -37,12 +37,13 @@ class SharedViewModel(
     val renderedMarkdownElements: StateFlow<List<MarkdownElement>> =
         _renderedMarkdownElements.asStateFlow()
 
-    //Отслеживание статуса операции загрузки документа.
-    private val _loadStatus = MutableStateFlow<LoadStatus>(LoadStatus.Idle)
-    val loadStatus: StateFlow<LoadStatus> = _loadStatus.asStateFlow()
+    //Отслеживание статуса действий.
+    private val _operationStatus = MutableStateFlow<OperationStatus>(OperationStatus.Idle)
+    val operationStatus: StateFlow<OperationStatus> = _operationStatus.asStateFlow()
 
-    private val _saveStatus = MutableStateFlow<LoadStatus>(LoadStatus.Idle)
-    val saveStatus: StateFlow<LoadStatus> = _saveStatus.asStateFlow()
+    //Отслеживание источника текущего документа. Null, если это новый документ.
+    private val _currentDocumentSource = MutableStateFlow<MarkdownSource?>(null)
+    val currentDocumentSource: StateFlow<MarkdownSource?> = _currentDocumentSource.asStateFlow()
 
     /**
      * Устанавливает новое содержимое документа в ViewModel.
@@ -59,20 +60,22 @@ class SharedViewModel(
      */
     fun loadLocalFile(uri: Uri) {
         viewModelScope.launch {
-            _loadStatus.value = LoadStatus.Loading
+            _operationStatus.value = OperationStatus.Loading
             loadMarkdownDocumentUseCase(MarkdownSource.LocalFile(uri))
                 .collectLatest { result ->
                     result
                         .onSuccess { content ->
                             _documentContent.value = content
                             renderAndDisplayMarkdown(content)
-                            _loadStatus.value = LoadStatus.Success
+                            _operationStatus.value = OperationStatus.Success
+                            _currentDocumentSource.value = MarkdownSource.LocalFile(uri)
                         }
                         .onFailure { throwable ->
-                            _loadStatus.value = LoadStatus.Error(
+                            _operationStatus.value = OperationStatus.Error(
                                 throwable.localizedMessage
                                     ?: "Неизвестная ошибка при загрузке файла."
                             )
+                            _currentDocumentSource.value = null
                         }
                 }
         }
@@ -84,42 +87,62 @@ class SharedViewModel(
      */
     fun loadFromUrl(url: String) {
         viewModelScope.launch {
-            _loadStatus.value = LoadStatus.Loading
+            _operationStatus.value = OperationStatus.Loading
             loadMarkdownDocumentUseCase(MarkdownSource.Url(url))
                 .collectLatest { result ->
                     result
                         .onSuccess { content ->
                             _documentContent.value = content
                             renderAndDisplayMarkdown(content)
-                            _loadStatus.value = LoadStatus.Success
+                            _operationStatus.value = OperationStatus.Success
+                            _currentDocumentSource.value = null
                         }
                         .onFailure { throwable ->
-                            _loadStatus.value = LoadStatus.Error(
+                            _operationStatus.value = OperationStatus.Error(
                                 throwable.localizedMessage ?: "Неизвестная ошибка при загрузке URL."
                             )
+                            _currentDocumentSource.value = null
                         }
                 }
         }
     }
 
-//    fun saveCurrentDocument(documentId: String? = null) {
-//        viewModelScope.launch {
-//            _saveStatus.value = LoadStatus.Loading
-//            saveMarkdownDocumentUseCase(_documentContent.value, documentId)
-//                .collectLatest { result ->
-//                    result
-//                        .onSuccess {
-//                            _saveStatus.value = LoadStatus.Success
-//                            // Возможно, здесь можно сбросить статус или показать Toast
-//                        }
-//                        .onFailure { throwable ->
-//                            _saveStatus.value = LoadStatus.Error(
-//                                throwable.localizedMessage ?: "Неизвестная ошибка при сохранении."
-//                            )
-//                        }
-//                }
-//        }
-//    }
+    /**
+     * Инициирует сохранения Markdown-документа.
+     * Сохраняет в тот локалный файл из которого брали содержимое или новый файл, в случае
+     * если из сети
+     */
+    fun saveCurrentDocument() {
+        viewModelScope.launch {
+            _operationStatus.value = OperationStatus.Loading
+            val sourceToSaveTo: MarkdownSource? =
+                when (val currentSource = _currentDocumentSource.value) {
+                    is MarkdownSource.LocalFile -> currentSource
+                    is MarkdownSource.Url -> null
+                    null -> null
+                }
+
+            try {
+                saveMarkdownDocumentUseCase(_documentContent.value, sourceToSaveTo)
+                    .collectLatest { result ->
+                        result
+                            .onSuccess {
+                                _operationStatus.value = OperationStatus.Success
+                            }
+                            .onFailure { throwable ->
+                                _operationStatus.value = OperationStatus.Error(
+                                    throwable.localizedMessage ?: "Неизвестная ошибка сохранения"
+                                )
+                            }
+                    }
+            } catch (e: Exception) {
+                _operationStatus.value =
+                    OperationStatus.Error(
+                        e.localizedMessage ?: "Ошибка при инициализации сохранения"
+                    )
+            }
+        }
+    }
 
     /**
      * Вспомогательная функция для преобразования сырого Markdown-текста в список объектов

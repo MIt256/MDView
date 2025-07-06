@@ -37,7 +37,7 @@ import java.net.URL
  * Фрагмент для просмотра Markdown-документа.
  * Динамически отображает элементы Markdown, разобранные [RenderMarkdownUseCase].
  */
-class ViewFragment : Fragment() {
+class ViewFragment : Fragment(R.layout.fragment_view) {
 
     private val binding by viewBinding(FragmentViewBinding::bind)
     private lateinit var sharedViewModel: SharedViewModel
@@ -48,14 +48,6 @@ class ViewFragment : Fragment() {
         val factory = SharedViewModelFactory(requireActivity().application)
         sharedViewModel = ViewModelProvider(requireActivity(), factory)[SharedViewModel::class.java]
         markdownTextFormatter = MarkdownTextFormatter()
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
-        return inflater.inflate(R.layout.fragment_view, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

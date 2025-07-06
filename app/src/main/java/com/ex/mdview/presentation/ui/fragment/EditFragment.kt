@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
  * Предоставляет UI для выбора локального файла или ввода URL для загрузки Markdown.
  * Взаимодействует с [SharedViewModel] для доступа к Markdown-документу и сохранению
  */
-class EditFragment : Fragment() {
+class EditFragment : Fragment(R.layout.fragment_edit) {
 
     private val binding by viewBinding(FragmentEditBinding::bind)
     private lateinit var sharedViewModel: SharedViewModel
@@ -36,13 +36,6 @@ class EditFragment : Fragment() {
         super.onCreate(savedInstanceState)
         val factory = SharedViewModelFactory(requireActivity().application)
         sharedViewModel = ViewModelProvider(requireActivity(), factory)[SharedViewModel::class.java]
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
-        return inflater.inflate(R.layout.fragment_edit, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

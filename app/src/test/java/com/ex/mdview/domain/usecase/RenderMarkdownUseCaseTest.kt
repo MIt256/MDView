@@ -16,10 +16,10 @@ class RenderMarkdownUseCaseTest {
     }
 
     @Test
-    fun `renderMarkdown_emptyString_returnsEmptyList`() {
+    fun `renderMarkdown_emptyString_returnsOneEmptyLine`() {
         val markdown = ""
         val result = renderMarkdownUseCase(markdown)
-        assertTrue("Result list should be empty for empty markdown", result.isEmpty())
+        assertTrue("Result list should be empty for empty markdown", result.size == 1)
     }
 
     @Test
@@ -36,7 +36,7 @@ class RenderMarkdownUseCaseTest {
     fun `renderMarkdown_multipleParagraphs_returnsMultipleParagraphElements`() {
         val markdown = "Paragraph 1.\n\nParagraph 2."
         val result = renderMarkdownUseCase(markdown)
-        assertEquals("Result list should have 2 elements", 2, result.size)
+        assertEquals("Result list should have 2 elements", 3, result.size)
 
         assertTrue("First element should be a Paragraph", result[0] is MarkdownElement.Paragraph)
         assertEquals(
@@ -45,11 +45,13 @@ class RenderMarkdownUseCaseTest {
             (result[0] as MarkdownElement.Paragraph).text
         )
 
-        assertTrue("Second element should be a Paragraph", result[1] is MarkdownElement.Paragraph)
+        assertTrue("First element should be a Paragraph", result[1] is MarkdownElement.EmptyLine)
+
+        assertTrue("Second element should be a Paragraph", result[2] is MarkdownElement.Paragraph)
         assertEquals(
             "Second paragraph text should match",
             "Paragraph 2.",
-            (result[1] as MarkdownElement.Paragraph).text
+            (result[2] as MarkdownElement.Paragraph).text
         )
     }
 
@@ -137,8 +139,8 @@ class RenderMarkdownUseCaseTest {
 
         val result = renderMarkdownUseCase(markdown)
         assertEquals(
-            "Result list should have 7 elements",
-            7,
+            "Result list should have 12 elements",
+            12,
             result.size
         )
 
@@ -151,49 +153,65 @@ class RenderMarkdownUseCaseTest {
         )
         assertEquals("Heading 1 level should be 1", 1, (result[0] as MarkdownElement.Heading).level)
 
-        // Element 1: Paragraph
-        assertTrue("Element 1 should be a Paragraph", result[1] is MarkdownElement.Paragraph)
+        // Element 1: EmptyLine
+        assertTrue("Element 1 should be EmptyLine", result[1] is MarkdownElement.EmptyLine)
+
+        // Element 2: Paragraph
+        assertTrue("Element 2 should be a Paragraph", result[2] is MarkdownElement.Paragraph)
         assertEquals(
             "Paragraph text should match",
             "This is a paragraph.",
-            (result[1] as MarkdownElement.Paragraph).text
+            (result[2] as MarkdownElement.Paragraph).text
         )
 
-        // Element 2: Heading 2
-        assertTrue("Element 2 should be a Heading", result[2] is MarkdownElement.Heading)
+        // Element 3: EmptyLine
+        assertTrue("Element 3 should be EmptyLine", result[3] is MarkdownElement.EmptyLine)
+
+        // Element 4: Heading 2
+        assertTrue("Element 4 should be a Heading", result[4] is MarkdownElement.Heading)
         assertEquals(
             "Heading 2 text should match",
             "Features",
-            (result[2] as MarkdownElement.Heading).text
+            (result[4] as MarkdownElement.Heading).text
         )
-        assertEquals("Heading 2 level should be 2", 2, (result[2] as MarkdownElement.Heading).level)
+        assertEquals("Heading 2 level should be 2", 2, (result[4] as MarkdownElement.Heading).level)
 
-        // Element 3: Paragraph (for "- Feature 1")
-        assertTrue("Element 3 should be a Paragraph", result[3] is MarkdownElement.Paragraph)
+        // Element 5: EmptyLine
+        assertTrue("Element 5 should be EmptyLine", result[5] is MarkdownElement.EmptyLine)
+
+        // Element 6: Paragraph (for "- Feature 1")
+        assertTrue("Element 6 should be a Paragraph", result[6] is MarkdownElement.Paragraph)
         assertEquals(
             "First list item should match",
             "- Feature 1",
-            (result[3] as MarkdownElement.Paragraph).text
+            (result[6] as MarkdownElement.Paragraph).text
         )
 
-        // Element 4: Paragraph (for "- Feature 2")
-        assertTrue("Element 4 should be a Paragraph", result[4] is MarkdownElement.Paragraph)
+        // Element 7: Paragraph (for "- Feature 2")
+        assertTrue("Element 7 should be a Paragraph", result[7] is MarkdownElement.Paragraph)
         assertEquals(
             "Second list item should match",
             "- Feature 2",
-            (result[4] as MarkdownElement.Paragraph).text
+            (result[7] as MarkdownElement.Paragraph).text
         )
 
-        // Element 5: Image
-        assertTrue("Element 5 should be an Image", result[5] is MarkdownElement.Image)
+        // Element 8: EmptyLine
+        assertTrue("Element 8 should be EmptyLine", result[8] is MarkdownElement.EmptyLine)
+
+        // Element 9: Image
+        assertTrue("Element 9 should be an Image", result[9] is MarkdownElement.Image)
         assertEquals(
             "Image alt text should match",
             "Sample Image",
-            (result[5] as MarkdownElement.Image).altText
+            (result[9] as MarkdownElement.Image).altText
         )
 
-        assertTrue("Element 6 should be a Table", result[6] is MarkdownElement.Table)
-        val table = result[6] as MarkdownElement.Table
+        // Element 10: EmptyLine
+        assertTrue("Element 10 should be EmptyLine", result[10] is MarkdownElement.EmptyLine)
+
+        // Element 11: Table
+        assertTrue("Element 11 should be a Table", result[11] is MarkdownElement.Table)
+        val table = result[11] as MarkdownElement.Table
         assertEquals("Table headers count should match", 3, table.headers.size)
         assertEquals("Table row count should match", 2, table.rows.size)
     }
@@ -204,7 +222,7 @@ class RenderMarkdownUseCaseTest {
             " #  Title with spaces \n\n   Paragraph with spaces.   \n\n![  Alt  ](  http://url.com/img.png  )"
         val result = renderMarkdownUseCase(markdown)
 
-        assertEquals("Result list should have 3 elements", 3, result.size)
+        assertEquals("Result list should have 5 elements", 5, result.size)
 
         // Heading
         assertTrue("Element 0 should be a Heading", result[0] is MarkdownElement.Heading)
@@ -214,25 +232,31 @@ class RenderMarkdownUseCaseTest {
             (result[0] as MarkdownElement.Heading).text
         )
 
+        // EmptyLine
+        assertTrue("Element 1 should be EmptyLine", result[1] is MarkdownElement.EmptyLine)
+
         // Paragraph
-        assertTrue("Element 1 should be a Paragraph", result[1] is MarkdownElement.Paragraph)
+        assertTrue("Element 2 should be a Paragraph", result[2] is MarkdownElement.Paragraph)
         assertEquals(
             "Paragraph text should be trimmed",
             "Paragraph with spaces.",
-            (result[1] as MarkdownElement.Paragraph).text
+            (result[2] as MarkdownElement.Paragraph).text
         )
 
+        // EmptyLine
+        assertTrue("Element 3 should be EmptyLine", result[3] is MarkdownElement.EmptyLine)
+
         // Image
-        assertTrue("Element 2 should be an Image", result[2] is MarkdownElement.Image)
+        assertTrue("Element 4 should be an Image", result[4] is MarkdownElement.Image)
         assertEquals(
             "Image alt text should be trimmed",
             "Alt",
-            (result[2] as MarkdownElement.Image).altText
+            (result[4] as MarkdownElement.Image).altText
         )
         assertEquals(
             "Image URL should be trimmed",
             "http://url.com/img.png",
-            (result[2] as MarkdownElement.Image).url
+            (result[4] as MarkdownElement.Image).url
         )
     }
 
@@ -265,21 +289,25 @@ class RenderMarkdownUseCaseTest {
     }
 
     @Test
-    fun `renderMarkdown_emptyLinesBetweenElements_areIgnored`() {
+    fun `renderMarkdown_emptyLinesBetweenElements_areNotIgnored`() {
         val markdown = """
             # Heading 1
 
 
-            Paragraph 1
+            Paragraph 1 
 
 
             ## Heading 2
         """.trimIndent()
         val result = renderMarkdownUseCase(markdown)
-        assertEquals(3, result.size)
+        assertEquals(7, result.size)
         assertTrue(result[0] is MarkdownElement.Heading)
-        assertTrue(result[1] is MarkdownElement.Paragraph)
-        assertTrue(result[2] is MarkdownElement.Heading)
+        assertTrue(result[1] is MarkdownElement.EmptyLine)
+        assertTrue(result[2] is MarkdownElement.EmptyLine)
+        assertTrue(result[3] is MarkdownElement.Paragraph)
+        assertTrue(result[4] is MarkdownElement.EmptyLine)
+        assertTrue(result[5] is MarkdownElement.EmptyLine)
+        assertTrue(result[6] is MarkdownElement.Heading)
     }
 
     @Test
@@ -310,6 +338,35 @@ class RenderMarkdownUseCaseTest {
             "This is a paragraph.#NotAHeading",
             (result[0] as MarkdownElement.Paragraph).text
         )
+    }
+
+    @Test
+    fun `renderMarkdown_tableAndHeadingWithInlineFormatting_preservesMarkdownSyntax`() {
+        val markdown = """
+            # *Italic Heading*
+
+            | Name      | Status         |
+            |-----------|---------------|
+            | **Alice** | *Active*       |
+            | ~~Bob~~   | **_Inactive_** |
+        """.trimIndent()
+        val result = renderMarkdownUseCase(markdown)
+        // Ожидаем: Heading, EmptyLine, Table
+        assertEquals(3, result.size)
+        // Heading с markdown-разметкой
+        assertTrue(result[0] is MarkdownElement.Heading)
+        assertEquals("*Italic Heading*", (result[0] as MarkdownElement.Heading).text)
+        // EmptyLine
+        assertTrue(result[1] is MarkdownElement.EmptyLine)
+        // Таблица с markdown-разметкой в ячейках
+        assertTrue(result[2] is MarkdownElement.Table)
+        val table = result[2] as MarkdownElement.Table
+        assertEquals(listOf("Name", "Status"), table.headers)
+        assertEquals(2, table.rows.size)
+        assertEquals("**Alice**", table.rows[0][0])
+        assertEquals("*Active*", table.rows[0][1])
+        assertEquals("~~Bob~~", table.rows[1][0])
+        assertEquals("**_Inactive_**", table.rows[1][1])
     }
 
 }

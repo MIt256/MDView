@@ -22,7 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.ex.mdview.R
 import com.ex.mdview.databinding.FragmentViewBinding
-import com.ex.mdview.domain.model.MarkdownElement
+import com.ex.mdview.presentation.model.MarkdownUiModel
 import com.ex.mdview.presentation.ui.util.viewBinding
 import com.ex.mdview.presentation.util.MarkdownTextFormatter
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
@@ -67,7 +67,7 @@ class ViewFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    sharedViewModel.renderedMarkdownElements.collectLatest { elements ->
+                    sharedViewModel.renderedMarkdownUiModels.collectLatest { elements ->
                         renderMarkdownContent(elements)
                     }
                 }
@@ -84,7 +84,7 @@ class ViewFragment : Fragment() {
      * Основной метод рендеринга Markdown-контента
      * @param elements список элементов Markdown для отображения
      */
-    private fun renderMarkdownContent(elements: List<MarkdownElement>) {
+    private fun renderMarkdownContent(elements: List<MarkdownUiModel>) {
         binding.markdownContentContainer.removeAllViews()
 
         if (shouldShowPlaceholder(elements)) {
@@ -95,22 +95,22 @@ class ViewFragment : Fragment() {
 
         elements.forEach { element ->
             when (element) {
-                is MarkdownElement.Heading -> renderHeading(element)
-                is MarkdownElement.Paragraph -> renderParagraph(element)
-                is MarkdownElement.Image -> renderImage(element)
-                is MarkdownElement.Table -> renderTable(element)
-                is MarkdownElement.EmptyLine -> renderEmptyLine()
+                is MarkdownUiModel.Heading -> renderHeading(element)
+                is MarkdownUiModel.Paragraph -> renderParagraph(element)
+                is MarkdownUiModel.Image -> renderImage(element)
+                is MarkdownUiModel.Table -> renderTable(element)
+                is MarkdownUiModel.EmptyLine -> renderEmptyLine()
             }
         }
     }
 
-    private fun shouldShowPlaceholder(elements: List<MarkdownElement>): Boolean {
+    private fun shouldShowPlaceholder(elements: List<MarkdownUiModel>): Boolean {
         return elements.isEmpty() || (elements.size == 1 &&
-                elements[0] is MarkdownElement.Paragraph &&
-                (elements[0] as MarkdownElement.Paragraph).text.isEmpty())
+                elements[0] is MarkdownUiModel.Paragraph &&
+                (elements[0] as MarkdownUiModel.Paragraph).text.isEmpty())
     }
 
-    private fun renderHeading(heading: MarkdownElement.Heading) {
+    private fun renderHeading(heading: MarkdownUiModel.Heading) {
         TextView(context).apply {
             text = markdownTextFormatter.formatInlineText(heading.text)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, (24 - (heading.level - 1) * 2).toFloat())
@@ -123,7 +123,7 @@ class ViewFragment : Fragment() {
         }
     }
 
-    private fun renderParagraph(paragraph: MarkdownElement.Paragraph) {
+    private fun renderParagraph(paragraph: MarkdownUiModel.Paragraph) {
         TextView(context).apply {
             text = markdownTextFormatter.formatInlineText(paragraph.text)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
@@ -132,7 +132,7 @@ class ViewFragment : Fragment() {
         }
     }
 
-    private fun renderImage(image: MarkdownElement.Image) {
+    private fun renderImage(image: MarkdownUiModel.Image) {
         ImageView(context).apply {
             contentDescription = image.altText
             scaleType = ImageView.ScaleType.FIT_CENTER
@@ -144,7 +144,7 @@ class ViewFragment : Fragment() {
         }
     }
 
-    private fun renderTable(table: MarkdownElement.Table) {
+    private fun renderTable(table: MarkdownUiModel.Table) {
         HorizontalScrollView(context).apply {
             setLayoutParams(topMargin = 8, bottomMargin = 8)
 

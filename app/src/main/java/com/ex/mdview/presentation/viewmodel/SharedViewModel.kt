@@ -8,6 +8,8 @@ import com.ex.mdview.domain.model.MarkdownSource
 import com.ex.mdview.domain.usecase.LoadMarkdownDocumentUseCase
 import com.ex.mdview.domain.usecase.RenderMarkdownUseCase
 import com.ex.mdview.domain.usecase.SaveMarkdownDocumentUseCase
+import com.ex.mdview.presentation.model.MarkdownUiModel
+import com.ex.mdview.presentation.model.toUiModels
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -35,10 +37,10 @@ class SharedViewModel(
     private val _documentContent = MutableStateFlow<String>("")
     val documentContent: StateFlow<String> = _documentContent.asStateFlow()
 
-    //Хранение списка MarkdownElement, которые готовы для нативного отображения в UI.
-    private val _renderedMarkdownElements = MutableStateFlow<List<MarkdownElement>>(emptyList())
-    val renderedMarkdownElements: StateFlow<List<MarkdownElement>> =
-        _renderedMarkdownElements.asStateFlow()
+    //Хранение списка MarkdownUiModel, которые готовы для нативного отображения в UI.
+    private val _renderedMarkdownUiModels = MutableStateFlow<List<MarkdownUiModel>>(emptyList())
+    val renderedMarkdownUiModels: StateFlow<List<MarkdownUiModel>> =
+        _renderedMarkdownUiModels.asStateFlow()
 
     // StateFlow для статуса операции, который может иметь постоянное состояние
     private val _operationStatus = MutableStateFlow<OperationStatus>(OperationStatus.Idle)
@@ -189,7 +191,7 @@ class SharedViewModel(
     private fun renderAndDisplayMarkdown(markdownText: String) {
         viewModelScope.launch {
             val elements = renderMarkdownUseCase(markdownText)
-            _renderedMarkdownElements.value = elements
+            _renderedMarkdownUiModels.value = elements.toUiModels()
         }
     }
 

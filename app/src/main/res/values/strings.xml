@@ -14,4 +14,8 @@
     <string name="default_markdown_filename">new_markdown.md</string>
     <string name="select_md_file_error">Выберите файл с расширением .md</string>
     <string name="enter_url_error">Введите URL</string>
+    <string name="toolbar_bold">B</string>
+    <string name="toolbar_italic">I</string>
+    <string name="toolbar_strike">S</string>
+    <string name="toolbar_header">#</string>
 </resources>

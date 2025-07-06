@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.ex.mdview.R
 import com.ex.mdview.databinding.FragmentViewBinding
 import com.ex.mdview.domain.model.MarkdownElement
+import com.ex.mdview.presentation.ui.util.viewBinding
 import com.ex.mdview.presentation.util.MarkdownTextFormatter
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
@@ -38,8 +39,7 @@ import java.net.URL
  */
 class ViewFragment : Fragment() {
 
-    private var _binding: FragmentViewBinding? = null
-    private val binding get() = _binding!!
+    private val binding by viewBinding(FragmentViewBinding::bind)
     private lateinit var sharedViewModel: SharedViewModel
     private lateinit var markdownTextFormatter: MarkdownTextFormatter
 
@@ -54,8 +54,7 @@ class ViewFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentViewBinding.inflate(inflater, container, false)
-        return binding.root
+        return inflater.inflate(R.layout.fragment_view, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -231,10 +230,5 @@ class ViewFragment : Fragment() {
             dp.toFloat(),
             resources.displayMetrics
         ).toInt()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

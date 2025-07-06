@@ -17,6 +17,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.ex.mdview.R
 import com.ex.mdview.databinding.FragmentUploadBinding
+import com.ex.mdview.presentation.ui.util.viewBinding
 import com.ex.mdview.presentation.viewmodel.OperationStatus
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
@@ -30,8 +31,7 @@ import kotlinx.coroutines.launch
  */
 class UploadFragment : Fragment() {
 
-    private var _binding: FragmentUploadBinding? = null
-    private val binding get() = _binding!!
+    private val binding by viewBinding(FragmentUploadBinding::bind)
     private lateinit var sharedViewModel: SharedViewModel
 
     private val filePickerLauncher: ActivityResultLauncher<Intent> =
@@ -55,8 +55,7 @@ class UploadFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentUploadBinding.inflate(inflater, container, false)
-        return binding.root
+        return inflater.inflate(R.layout.fragment_upload, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -73,7 +72,6 @@ class UploadFragment : Fragment() {
                             "application/octet-stream", "text/plain"
                         )
                     )
-
                 }
                 filePickerLauncher.launch(intent)
             }
@@ -169,12 +167,7 @@ class UploadFragment : Fragment() {
      * Вспомогательная функция для отображения короткого сообщений (Toast).
      * @param message Сообщение.
      */
-    private fun showMessage(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    private fun showMessage(async: String) {
+        Toast.makeText(context, async, Toast.LENGTH_SHORT).show()
     }
 }

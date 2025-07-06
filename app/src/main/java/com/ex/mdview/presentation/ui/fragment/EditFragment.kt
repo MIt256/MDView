@@ -11,7 +11,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.ex.mdview.R
 import com.ex.mdview.databinding.FragmentEditBinding
+import com.ex.mdview.presentation.ui.util.viewBinding
 import com.ex.mdview.presentation.viewmodel.OperationStatus
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
@@ -25,8 +27,7 @@ import kotlinx.coroutines.launch
  */
 class EditFragment : Fragment() {
 
-    private var _binding: FragmentEditBinding? = null
-    private val binding get() = _binding!!
+    private val binding by viewBinding(FragmentEditBinding::bind)
     private lateinit var sharedViewModel: SharedViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,8 +40,7 @@ class EditFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentEditBinding.inflate(inflater, container, false)
-        return binding.root
+        return inflater.inflate(R.layout.fragment_edit, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -61,15 +61,15 @@ class EditFragment : Fragment() {
                 launch {
                     sharedViewModel.operationStatus.collectLatest { status ->
                         when (status) {
-                            OperationStatus.Idle -> {
+                            is OperationStatus.Idle -> {
                                 binding.saveButton.isEnabled = true
                             }
 
-                            OperationStatus.Loading -> {
+                            is OperationStatus.Loading -> {
                                 binding.saveButton.isEnabled = false
                             }
 
-                            OperationStatus.Success -> {
+                            is OperationStatus.Success -> {
                                 binding.saveButton.isEnabled = true
                             }
 
@@ -94,10 +94,5 @@ class EditFragment : Fragment() {
             sharedViewModel.saveCurrentDocument()
             findNavController().popBackStack()
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

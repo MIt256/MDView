@@ -29,6 +29,7 @@ class RenderMarkdownUseCase {
                     currentTableHeaders.clear()
                     currentTableRows.clear()
                 }
+                elements.add(MarkdownElement.EmptyLine)
                 return@forEachIndexed
             }
             val matchedHeading =

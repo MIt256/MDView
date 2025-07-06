@@ -99,6 +99,7 @@ class ViewFragment : Fragment() {
                 is MarkdownElement.Paragraph -> renderParagraph(element)
                 is MarkdownElement.Image -> renderImage(element)
                 is MarkdownElement.Table -> renderTable(element)
+                is MarkdownElement.EmptyLine -> renderEmptyLine()
             }
         }
     }
@@ -111,7 +112,7 @@ class ViewFragment : Fragment() {
 
     private fun renderHeading(heading: MarkdownElement.Heading) {
         TextView(context).apply {
-            text = heading.text
+            text = markdownTextFormatter.formatInlineText(heading.text)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, (24 - (heading.level - 1) * 2).toFloat())
             setTypeface(null, Typeface.BOLD)
             setLayoutParams(
@@ -168,7 +169,7 @@ class ViewFragment : Fragment() {
         return TableRow(context).apply {
             cells.forEach { cell ->
                 addView(TextView(context).apply {
-                    text = cell
+                    text = markdownTextFormatter.formatInlineText(cell)
                     typeface?.let { setTypeface(it) }
                     setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
                     this.gravity = gravity
@@ -225,5 +226,14 @@ class ViewFragment : Fragment() {
 
     private fun showToastMessage(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun renderEmptyLine() {
+        TextView(context).apply {
+            text = ""
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 8f)
+            setLayoutParams(topMargin = 4, bottomMargin = 4)
+            binding.markdownContentContainer.addView(this)
+        }
     }
 }

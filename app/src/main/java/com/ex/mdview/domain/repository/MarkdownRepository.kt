@@ -1,4 +1,4 @@
-package com.ex.mdview.data.repository
+package com.ex.mdview.domain.repository
 
 import android.net.Uri
 
@@ -21,13 +21,6 @@ interface MarkdownRepository {
      * @throws Exception в случае ошибки (например, FileNotFoundException).
      */
     suspend fun getMarkdownContentFromFile(uri: Uri): String
-
-    /**
-     * Сохраняет содержимое Markdown (новый файл).
-     * @param content Содержимое для сохранения.
-     * @throws Exception в случае ошибки сохранения.
-     */
-    suspend fun saveNewMarkdownContent(content: String)
 
     /**
      * Сохраняет содержимое Markdown (существующий файл).

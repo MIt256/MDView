@@ -17,6 +17,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.ex.mdview.R
 import com.ex.mdview.databinding.FragmentUploadBinding
+import com.ex.mdview.presentation.ui.util.viewBinding
 import com.ex.mdview.presentation.viewmodel.OperationStatus
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
@@ -28,22 +29,10 @@ import kotlinx.coroutines.launch
  * Предоставляет UI для выбора локального файла или ввода URL для загрузки Markdown.
  * Взаимодействует с [SharedViewModel] для выполнения операций загрузки и отслеживания статуса.
  */
-class UploadFragment : Fragment() {
+class UploadFragment : Fragment(R.layout.fragment_upload) {
 
-    private var _binding: FragmentUploadBinding? = null
-    private val binding get() = _binding!!
+    private val binding by viewBinding(FragmentUploadBinding::bind)
     private lateinit var sharedViewModel: SharedViewModel
-
-    private val filePickerLauncher: ActivityResultLauncher<Intent> =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            result.data?.data?.let { uri ->
-                if (isMarkdownFile(uri)) {
-                    sharedViewModel.loadLocalFile(uri)
-                } else {
-                    showMessage("Выберите файл с расширением .md")
-                }
-            }
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,32 +40,16 @@ class UploadFragment : Fragment() {
         sharedViewModel = ViewModelProvider(requireActivity(), factory)[SharedViewModel::class.java]
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentUploadBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        with(binding) {
-            localButton.setOnClickListener {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "text/markdown"
-                    putExtra(
-                        Intent.EXTRA_MIME_TYPES, arrayOf(
-                            "text/markdown", "text/x-markdown",
-                            "application/octet-stream", "text/plain"
-                        )
-                    )
+        setupListeners()
+        observeViewModel()
+    }
 
-                }
-                filePickerLauncher.launch(intent)
-            }
+    private fun setupListeners() {
+        with(binding) {
+            localButton.setOnClickListener { openFilePicker() }
             webButton.setOnClickListener { loadFromUrl() }
             viewFragmentButton.setOnClickListener {
                 findNavController().navigate(
@@ -89,71 +62,55 @@ class UploadFragment : Fragment() {
                 )
             }
         }
-
-        observeViewModel()
     }
 
-    /**
-     * Проверяет, является ли выбранный файл Markdown-файлом по его URI.
-     * @param uri URI файла.
-     * @return true, если файл является Markdown, иначе false.
-     */
+    private fun openFilePicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/markdown"
+            putExtra(
+                Intent.EXTRA_MIME_TYPES, arrayOf(
+                    "text/markdown", "text/x-markdown",
+                    "application/octet-stream", "text/plain"
+                )
+            )
+        }
+        filePickerLauncher.launch(intent)
+    }
+
+    private val filePickerLauncher: ActivityResultLauncher<Intent> =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            result.data?.data?.let { uri ->
+                if (isMarkdownFile(uri)) {
+                    sharedViewModel.loadLocalFile(uri)
+                } else {
+                    showMessage(getString(R.string.select_md_file_error))
+                }
+            }
+        }
+
     private fun isMarkdownFile(uri: Uri): Boolean {
         val mimeType = context?.contentResolver?.getType(uri)
-        if (mimeType == "text/markdown" || mimeType == "text/x-markdown") {
-            return true
-        }
-        return uri.path?.endsWith(".md", ignoreCase = true) ?: false ||
-                uri.path?.endsWith(".markdown", ignoreCase = true) ?: false
+        return mimeType == "text/markdown" || mimeType == "text/x-markdown" ||
+                uri.path?.endsWith(".md", ignoreCase = true) == true ||
+                uri.path?.endsWith(".markdown", ignoreCase = true) == true
     }
 
-    /**
-     * Вызывает загрузку документа из интернета по URL, введенному пользователем.
-     */
     private fun loadFromUrl() {
         val url = binding.url.text.toString()
         if (url.isNotBlank()) {
             sharedViewModel.loadFromUrl(url)
         } else {
-            binding.url.error = "Введите URL"
+            binding.url.error = getString(R.string.enter_url_error)
         }
     }
 
-    /**
-     * Наблюдает за состоянием [OperationStatus] в [SharedViewModel]
-     */
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.operationStatus.collectLatest { status ->
-                        when (status) {
-                            OperationStatus.Idle -> {
-                                binding.editFragmentButton.visibility = View.INVISIBLE
-                                binding.viewFragmentButton.visibility = View.INVISIBLE
-                                binding.imageView.visibility = View.INVISIBLE
-                            }
-
-                            OperationStatus.Loading -> {
-                                binding.editFragmentButton.visibility = View.INVISIBLE
-                                binding.viewFragmentButton.visibility = View.INVISIBLE
-                                binding.imageView.visibility = View.INVISIBLE
-                            }
-
-                            OperationStatus.Success -> {
-                                binding.editFragmentButton.visibility = View.VISIBLE
-                                binding.viewFragmentButton.visibility = View.VISIBLE
-                                binding.imageView.visibility = View.VISIBLE
-                                binding.imageView.setImageResource(R.drawable.good_status)
-                            }
-
-                            is OperationStatus.Error -> {
-                                binding.editFragmentButton.visibility = View.INVISIBLE
-                                binding.viewFragmentButton.visibility = View.INVISIBLE
-                                binding.imageView.visibility = View.VISIBLE
-                                binding.imageView.setImageResource(R.drawable.error_status)
-                            }
-                        }
+                        updateUiByStatus(status)
                     }
                 }
                 launch {
@@ -165,16 +122,31 @@ class UploadFragment : Fragment() {
         }
     }
 
-    /**
-     * Вспомогательная функция для отображения короткого сообщений (Toast).
-     * @param message Сообщение.
-     */
-    private fun showMessage(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    private fun updateUiByStatus(status: OperationStatus) {
+        with(binding) {
+            when (status) {
+                OperationStatus.Idle, OperationStatus.Loading -> {
+                    editFragmentButton.visibility = View.INVISIBLE
+                    viewFragmentButton.visibility = View.INVISIBLE
+                    imageView.visibility = View.INVISIBLE
+                }
+                OperationStatus.Success -> {
+                    editFragmentButton.visibility = View.VISIBLE
+                    viewFragmentButton.visibility = View.VISIBLE
+                    imageView.visibility = View.VISIBLE
+                    imageView.setImageResource(R.drawable.good_status)
+                }
+                is OperationStatus.Error -> {
+                    editFragmentButton.visibility = View.INVISIBLE
+                    viewFragmentButton.visibility = View.INVISIBLE
+                    imageView.visibility = View.VISIBLE
+                    imageView.setImageResource(R.drawable.error_status)
+                }
+            }
+        }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    private fun showMessage(async: String) {
+        Toast.makeText(context, async, Toast.LENGTH_SHORT).show()
     }
 }

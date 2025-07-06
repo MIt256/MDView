@@ -1,11 +1,13 @@
 package com.ex.mdview.domain.usecase
 
 import com.ex.mdview.domain.model.MarkdownElement
+import com.ex.mdview.domain.util.getGroupValue
 
 /**
  * Use Case: Рендеринг Markdown-текста в структуру для нативного отображения.
  */
 class RenderMarkdownUseCase {
+
     operator fun invoke(markdownText: String): List<MarkdownElement> {
         val elements = mutableListOf<MarkdownElement>()
         val lines = markdownText.lines()
@@ -27,83 +29,43 @@ class RenderMarkdownUseCase {
                     currentTableHeaders.clear()
                     currentTableRows.clear()
                 }
+                elements.add(MarkdownElement.EmptyLine)
                 return@forEachIndexed
             }
-
-            when {
-                line.startsWith("###### ") -> handleElement(
+            val matchedHeading =
+                headingPrefixes.firstOrNull { (prefix, _) -> line.startsWith(prefix) }
+            if (matchedHeading != null) {
+                val (prefix, level) = matchedHeading
+                inTable = handleElement(
                     elements,
                     inTable,
                     currentTableHeaders,
                     currentTableRows
                 ) {
-                    MarkdownElement.Heading(line.substring(7).trim(), 6)
-                }.also { inTable = it.first; currentTableHeaders.clear(); currentTableRows.clear() }
-
-                line.startsWith("##### ") -> handleElement(
-                    elements,
-                    inTable,
-                    currentTableHeaders,
-                    currentTableRows
-                ) {
-                    MarkdownElement.Heading(line.substring(6).trim(), 5)
-                }.also { inTable = it.first; currentTableHeaders.clear(); currentTableRows.clear() }
-
-                line.startsWith("#### ") -> handleElement(
-                    elements,
-                    inTable,
-                    currentTableHeaders,
-                    currentTableRows
-                ) {
-                    MarkdownElement.Heading(line.substring(5).trim(), 4)
-                }.also { inTable = it.first; currentTableHeaders.clear(); currentTableRows.clear() }
-
-                line.startsWith("### ") -> handleElement(
-                    elements,
-                    inTable,
-                    currentTableHeaders,
-                    currentTableRows
-                ) {
-                    MarkdownElement.Heading(line.substring(4).trim(), 3)
-                }.also { inTable = it.first; currentTableHeaders.clear(); currentTableRows.clear() }
-
-                line.startsWith("## ") -> handleElement(
-                    elements,
-                    inTable,
-                    currentTableHeaders,
-                    currentTableRows
-                ) {
-                    MarkdownElement.Heading(line.substring(3).trim(), 2)
-                }.also { inTable = it.first; currentTableHeaders.clear(); currentTableRows.clear() }
-
-                line.startsWith("# ") -> handleElement(
-                    elements,
-                    inTable,
-                    currentTableHeaders,
-                    currentTableRows
-                ) {
-                    MarkdownElement.Heading(line.substring(2).trim(), 1)
-                }.also { inTable = it.first; currentTableHeaders.clear(); currentTableRows.clear() }
-
-                line.matches(Regex("!\\[(.*)\\]\\((.*)\\)")) -> {
-                    handleElement(
+                    MarkdownElement.Heading(line.substring(prefix.length).trim(), level)
+                }
+                currentTableHeaders.clear()
+                currentTableRows.clear()
+            } else when {
+                line.matches(IMAGE_REGEX) -> {
+                    inTable = handleElement(
                         elements,
                         inTable,
                         currentTableHeaders,
                         currentTableRows
                     ) {
-                        val matchResult = Regex("!\\[(.*)\\]\\((.*)\\)").find(line)
-                        val altText = matchResult?.groups?.get(1)?.value ?: ""
-                        val imageUrl = matchResult?.groups?.get(2)?.value ?: ""
+                        val matchResult = IMAGE_REGEX.find(line)
+                        val altText = matchResult.getGroupValue(1)
+                        val imageUrl = matchResult.getGroupValue(2)
                         MarkdownElement.Image(imageUrl.trim(), altText.trim())
-                    }.also {
-                        inTable = it.first; currentTableHeaders.clear(); currentTableRows.clear()
                     }
+                    currentTableHeaders.clear()
+                    currentTableRows.clear()
                 }
 
                 line.trim().startsWith("|") && line.contains("|") -> {
                     val nextLineIsDivider =
-                        lines.size > index + 1 && lines[index + 1].matches(Regex("\\|([\\-: ]+\\|)+[\\-: ]*"))
+                        lines.size > index + 1 && lines[index + 1].matches(TABLE_DIVIDER_REGEX)
 
                     if (!inTable && nextLineIsDivider) {
                         inTable = true
@@ -116,7 +78,7 @@ class RenderMarkdownUseCase {
                                 .map { it.trim() }
                         )
                     } else if (inTable) {
-                        if (line.matches(Regex("\\|([\\-: ]+\\|)+[\\-: ]*"))) {
+                        if (line.matches(TABLE_DIVIDER_REGEX)) {
                         } else {
                             val rowData = line.split("|")
                                 .drop(1)
@@ -171,7 +133,7 @@ class RenderMarkdownUseCase {
         currentTableHeaders: MutableList<String>,
         currentTableRows: MutableList<List<String>>,
         createElement: () -> MarkdownElement
-    ): Pair<Boolean, Unit> {
+    ): Boolean {
         if (inTable) {
             elements.add(
                 MarkdownElement.Table(
@@ -179,9 +141,23 @@ class RenderMarkdownUseCase {
                     currentTableRows.toList()
                 )
             )
-            return Pair(false, Unit)
+            return false
         }
         elements.add(createElement())
-        return Pair(inTable, Unit)
+        return inTable
+    }
+
+    companion object {
+        private val headingPrefixes = listOf(
+            "###### " to 6,
+            "##### " to 5,
+            "#### " to 4,
+            "### " to 3,
+            "## " to 2,
+            "# " to 1
+        )
+
+        private val IMAGE_REGEX = Regex("!\\[(.*)\\]\\((.*)\\)")
+        private val TABLE_DIVIDER_REGEX = Regex("\\|([\\-: ]+\\|)+[\\-: ]*")
     }
 }

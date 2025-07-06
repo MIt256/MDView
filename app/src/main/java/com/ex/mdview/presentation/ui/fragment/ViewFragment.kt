@@ -14,7 +14,7 @@ import android.widget.LinearLayout
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
-import androidx.core.content.ContextCompat
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -22,7 +22,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.ex.mdview.R
 import com.ex.mdview.databinding.FragmentViewBinding
-import com.ex.mdview.domain.model.MarkdownElement
+import com.ex.mdview.presentation.model.MarkdownUiModel
+import com.ex.mdview.presentation.ui.util.viewBinding
 import com.ex.mdview.presentation.util.MarkdownTextFormatter
 import com.ex.mdview.presentation.viewmodel.SharedViewModel
 import com.ex.mdview.presentation.viewmodel.factory.SharedViewModelFactory
@@ -36,10 +37,9 @@ import java.net.URL
  * Фрагмент для просмотра Markdown-документа.
  * Динамически отображает элементы Markdown, разобранные [RenderMarkdownUseCase].
  */
-class ViewFragment : Fragment() {
+class ViewFragment : Fragment(R.layout.fragment_view) {
 
-    private var _binding: FragmentViewBinding? = null
-    private val binding get() = _binding!!
+    private val binding by viewBinding(FragmentViewBinding::bind)
     private lateinit var sharedViewModel: SharedViewModel
     private lateinit var markdownTextFormatter: MarkdownTextFormatter
 
@@ -50,170 +50,134 @@ class ViewFragment : Fragment() {
         markdownTextFormatter = MarkdownTextFormatter()
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentViewBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupObservers()
+    }
 
+    private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sharedViewModel.renderedMarkdownElements.collectLatest { elements ->
-                    displayMarkdownElements(elements)
+                launch {
+                    sharedViewModel.renderedMarkdownUiModels.collectLatest { elements ->
+                        renderMarkdownContent(elements)
+                    }
+                }
+                launch {
+                    sharedViewModel.oneTimeMessage.collectLatest { message ->
+                        showToastMessage(message)
+                    }
                 }
             }
         }
     }
 
     /**
-     * Динамически создает и добавляет View для каждого [MarkdownElement].
-     * @param elements набор [MarkdownElement] для отображения.
+     * Основной метод рендеринга Markdown-контента
+     * @param elements список элементов Markdown для отображения
      */
-    private fun displayMarkdownElements(elements: List<MarkdownElement>) {
+    private fun renderMarkdownContent(elements: List<MarkdownUiModel>) {
         binding.markdownContentContainer.removeAllViews()
 
-        if (elements.isEmpty() || (elements.size == 1 && elements[0] is MarkdownElement.Paragraph && (elements[0] as MarkdownElement.Paragraph).text.isEmpty())) {
+        if (shouldShowPlaceholder(elements)) {
             binding.placeholderText.visibility = View.VISIBLE
             return
-        } else {
-            binding.placeholderText.visibility = View.GONE
         }
+        binding.placeholderText.visibility = View.GONE
 
         elements.forEach { element ->
             when (element) {
-                is MarkdownElement.Heading -> {
-                    val textView = TextView(context).apply {
-                        text = element.text
-                        setTextSize(
-                            TypedValue.COMPLEX_UNIT_SP,
-                            (24 - (element.level - 1) * 2).toFloat()
-                        )
-                        setTypeface(null, Typeface.BOLD)
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            setMargins(
-                                0,
-                                if (element.level == 1) dpToPx(16) else dpToPx(8),
-                                0,
-                                dpToPx(4)
-                            )
-                        }
-                    }
-                    binding.markdownContentContainer.addView(textView)
-                }
-
-                is MarkdownElement.Paragraph -> {
-                    val textView = TextView(context).apply {
-                        text = markdownTextFormatter.formatInlineText(element.text)
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            setMargins(0, dpToPx(4), 0, dpToPx(4))
-                        }
-                    }
-                    binding.markdownContentContainer.addView(textView)
-                }
-
-                is MarkdownElement.Image -> {
-                    val imageView = ImageView(context).apply {
-                        contentDescription = element.altText
-                        scaleType = ImageView.ScaleType.FIT_CENTER
-                        adjustViewBounds = true
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            setMargins(0, dpToPx(8), 0, dpToPx(8))
-                        }
-                        setImageDrawable(ContextCompat.getDrawable(context, R.drawable.img_ph))
-                    }
-                    binding.markdownContentContainer.addView(imageView)
-
-                    loadImage(element.url, imageView)
-                }
-
-                is MarkdownElement.Table -> {
-                    val tableLayout = TableLayout(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            setMargins(0, dpToPx(8), 0, dpToPx(8))
-                        }
-                        setBackgroundResource(R.drawable.table_border)
-                    }
-
-                    //Заголовки таблицы
-                    val headerRow = TableRow(context).apply {
-                        layoutParams = TableLayout.LayoutParams(
-                            TableLayout.LayoutParams.WRAP_CONTENT,
-                            TableLayout.LayoutParams.WRAP_CONTENT
-                        )
-                    }
-                    element.headers.forEach { header ->
-                        val headerTextView = TextView(context).apply {
-                            text = header
-                            setTypeface(null, Typeface.BOLD)
-                            setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
-                            gravity = Gravity.CENTER // Центрируем текст
-                            setBackgroundResource(R.drawable.cell_border)
-                            minWidth = dpToPx(50)
-                        }
-                        headerRow.addView(headerTextView)
-                    }
-                    tableLayout.addView(headerRow)
-
-                    //Cтроки таблицы
-                    element.rows.forEach { rowData ->
-                        val dataRow = TableRow(context).apply {
-                            layoutParams = TableLayout.LayoutParams(
-                                TableLayout.LayoutParams.WRAP_CONTENT,
-                                TableLayout.LayoutParams.WRAP_CONTENT
-                            )
-                        }
-                        rowData.forEach { cellData ->
-                            val cellTextView = TextView(context).apply {
-                                text = cellData
-                                setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
-                                gravity = Gravity.START
-                                setBackgroundResource(R.drawable.cell_border)
-                                minWidth = dpToPx(50)
-                            }
-                            dataRow.addView(cellTextView)
-                        }
-                        tableLayout.addView(dataRow)
-                    }
-
-                    val horizontalScrollView = HorizontalScrollView(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            setMargins(0, dpToPx(8), 0, dpToPx(8))
-                        }
-                        addView(tableLayout)
-                    }
-                    binding.markdownContentContainer.addView(horizontalScrollView)
-                }
+                is MarkdownUiModel.Heading -> renderHeading(element)
+                is MarkdownUiModel.Paragraph -> renderParagraph(element)
+                is MarkdownUiModel.Image -> renderImage(element)
+                is MarkdownUiModel.Table -> renderTable(element)
+                is MarkdownUiModel.EmptyLine -> renderEmptyLine()
             }
         }
     }
 
-    /** Асинхронноая загрузка изображений из URL. */
-    private fun loadImage(imageUrl: String, imageView: ImageView) {
+    private fun shouldShowPlaceholder(elements: List<MarkdownUiModel>): Boolean {
+        return elements.isEmpty() || (elements.size == 1 &&
+                elements[0] is MarkdownUiModel.Paragraph &&
+                (elements[0] as MarkdownUiModel.Paragraph).text.isEmpty())
+    }
+
+    private fun renderHeading(heading: MarkdownUiModel.Heading) {
+        TextView(context).apply {
+            text = markdownTextFormatter.formatInlineText(heading.text)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, (24 - (heading.level - 1) * 2).toFloat())
+            setTypeface(null, Typeface.BOLD)
+            setLayoutParams(
+                topMargin = if (heading.level == 1) 16 else 8,
+                bottomMargin = 4
+            )
+            binding.markdownContentContainer.addView(this)
+        }
+    }
+
+    private fun renderParagraph(paragraph: MarkdownUiModel.Paragraph) {
+        TextView(context).apply {
+            text = markdownTextFormatter.formatInlineText(paragraph.text)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setLayoutParams(topMargin = 4, bottomMargin = 4)
+            binding.markdownContentContainer.addView(this)
+        }
+    }
+
+    private fun renderImage(image: MarkdownUiModel.Image) {
+        ImageView(context).apply {
+            contentDescription = image.altText
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            adjustViewBounds = true
+            setLayoutParams(topMargin = 8, bottomMargin = 8)
+            setImageResource(R.drawable.img_ph)
+            binding.markdownContentContainer.addView(this)
+            loadRemoteImage(image.url, this)
+        }
+    }
+
+    private fun renderTable(table: MarkdownUiModel.Table) {
+        HorizontalScrollView(context).apply {
+            setLayoutParams(topMargin = 8, bottomMargin = 8)
+
+            addView(TableLayout(context).apply {
+                setBackgroundResource(R.drawable.table_border)
+
+                addView(createTableRow(table.headers, Typeface.DEFAULT_BOLD, Gravity.CENTER))
+
+                table.rows.forEach { row ->
+                    addView(createTableRow(row, null, Gravity.START))
+                }
+            })
+            binding.markdownContentContainer.addView(this)
+        }
+    }
+
+    private fun createTableRow(
+        cells: List<String>,
+        typeface: Typeface?,
+        gravity: Int,
+    ): TableRow {
+        return TableRow(context).apply {
+            cells.forEach { cell ->
+                addView(TextView(context).apply {
+                    text = markdownTextFormatter.formatInlineText(cell)
+                    typeface?.let { setTypeface(it) }
+                    setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+                    this.gravity = gravity
+                    setBackgroundResource(R.drawable.cell_border)
+                    minWidth = dpToPx(50)
+                })
+            }
+        }
+    }
+
+    private fun loadRemoteImage(imageUrl: String, imageView: ImageView) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val bitmap =
-                    BitmapFactory.decodeStream(URL(imageUrl).openConnection().getInputStream())
+                val bitmap = BitmapFactory.decodeStream(
+                    URL(imageUrl).openConnection().getInputStream()
+                )
                 withContext(Dispatchers.Main) {
                     imageView.setImageBitmap(bitmap)
                 }
@@ -225,6 +189,25 @@ class ViewFragment : Fragment() {
         }
     }
 
+    private fun View.setLayoutParams(
+        leftMargin: Int = 0,
+        topMargin: Int = 0,
+        rightMargin: Int = 0,
+        bottomMargin: Int = 0,
+    ) {
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(
+                dpToPx(leftMargin),
+                dpToPx(topMargin),
+                dpToPx(rightMargin),
+                dpToPx(bottomMargin)
+            )
+        }
+    }
+
     private fun dpToPx(dp: Int): Int {
         return TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
@@ -233,8 +216,16 @@ class ViewFragment : Fragment() {
         ).toInt()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    private fun showToastMessage(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun renderEmptyLine() {
+        TextView(context).apply {
+            text = ""
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 8f)
+            setLayoutParams(topMargin = 4, bottomMargin = 4)
+            binding.markdownContentContainer.addView(this)
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.ex.mdview.presentation.util
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.style.CharacterStyle
 import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 
@@ -14,63 +15,55 @@ class MarkdownTextFormatter {
 
     /**
      * Применяет встроенное форматирование Markdown к заданной строке.
-     * @param text Сырой текст, содержащий Markdown-разметку
+     * @param text Сырой текст, содержащий Markdown-разметку.
      * @return CharSequence с примененными Span-объектами.
      */
     fun formatInlineText(text: String): CharSequence {
-        val sb = SpannableStringBuilder(text)
+        val spannable = SpannableStringBuilder(text)
 
-        // Зачеркнутый текст ~~text~~
-        val strikethroughRegex = Regex("~~(.*?)~~")
-        val strikethroughMatches = strikethroughRegex.findAll(sb.toString()).toList().reversed()
-        strikethroughMatches.forEach { matchResult ->
-            val originalStart = matchResult.range.first
-            val originalEnd = matchResult.range.last + 1
-            val content = matchResult.groupValues[1]
+        applySpan(spannable, STRIKETHROUGH_REGEX) { StrikethroughSpan() }
+        applySpan(spannable, BOLD_REGEX) { StyleSpan(Typeface.BOLD) }
+        applySpan(spannable, ITALIC_REGEX) { StyleSpan(Typeface.ITALIC) }
 
-            sb.replace(originalStart, originalEnd, content)
-            sb.setSpan(
-                StrikethroughSpan(),
-                originalStart,
-                originalStart + content.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+        return spannable
+    }
+
+    /**
+     * Находит все совпадения по Regex в SpannableStringBuilder, заменяет их
+     * содержимым первой группы и применяет указанный Span.
+     *
+     * @param spannable Объект для модификации.
+     * @param regex Регулярное выражение для поиска.
+     * @param createSpan Лямбда-функция для создания экземпляра Span'а.
+     */
+    private fun applySpan(
+        spannable: SpannableStringBuilder,
+        regex: Regex,
+        createSpan: () -> CharacterStyle
+    ) {
+        val matches = regex.findAll(spannable).toList().reversed()
+
+        matches.forEach { matchResult ->
+            val contentGroup = matchResult.groups[1]
+            if (contentGroup != null) {
+                val content = contentGroup.value
+                val range = matchResult.range
+
+                spannable.replace(range.first, range.last + 1, content)
+
+                spannable.setSpan(
+                    createSpan(),
+                    range.first,
+                    range.first + content.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
         }
+    }
 
-        // Жирный текст **text**
-        val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
-        val boldMatches = boldRegex.findAll(sb.toString()).toList().reversed()
-        boldMatches.forEach { matchResult ->
-            val originalStart = matchResult.range.first
-            val originalEnd = matchResult.range.last + 1
-            val content = matchResult.groupValues[1]
-
-            sb.replace(originalStart, originalEnd, content)
-            sb.setSpan(
-                StyleSpan(Typeface.BOLD),
-                originalStart,
-                originalStart + content.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-
-        // Курсив *text*
-        val italicRegex = Regex("(?<!\\*)\\*(?!\\*)(.*?)(?<!\\*)\\*(?!\\*)")
-        val italicMatches = italicRegex.findAll(sb.toString()).toList().reversed()
-        italicMatches.forEach { matchResult ->
-            val originalStart = matchResult.range.first
-            val originalEnd = matchResult.range.last + 1
-            val content = matchResult.groupValues[1]
-
-            sb.replace(originalStart, originalEnd, content)
-            sb.setSpan(
-                StyleSpan(Typeface.ITALIC),
-                originalStart,
-                originalStart + content.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-
-        return sb
+    companion object {
+        private val STRIKETHROUGH_REGEX = Regex("~~(.*?)~~")
+        private val BOLD_REGEX = Regex("\\*\\*(.*?)\\*\\*")
+        private val ITALIC_REGEX = Regex("(?<!\\*)\\*(?!\\*)(.*?)(?<!\\*)\\*(?!\\*)")
     }
 }

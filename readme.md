@@ -27,15 +27,15 @@
 
 **Просмотр документа**
 
-![Просмотр документа](Screenshot_20250706_222009_MDView.jpg)
+<img src="Screenshot_20250706_222009_MDView.jpg" width="300"/>
 
 **Главный экран**
 
-![Главный экран](Screenshot_20250706_222028_MDView.jpg)
+<img src="Screenshot_20250706_222028_MDView.jpg" width="300"/>
 
 **Редактор**
 
-![Редактор](Screenshot_20250706_222059_MDView.jpg)
+<img src="Screenshot_20250706_222059_MDView.jpg" width="300"/>
 
 ## Технические особенности
 

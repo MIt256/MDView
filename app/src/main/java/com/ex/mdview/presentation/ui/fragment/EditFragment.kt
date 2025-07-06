@@ -50,6 +50,7 @@ class EditFragment : Fragment() {
 
         observeViewModel()
         setupListeners()
+        setupToolbar()
     }
 
     private fun observeViewModel() {
@@ -101,4 +102,46 @@ class EditFragment : Fragment() {
                 findNavController().popBackStack()
             }
         }
+
+    private fun setupToolbar() {
+        binding.btnBold.setOnClickListener {
+            formatSelectedText("**", "**")
+        }
+        binding.btnItalic.setOnClickListener {
+            formatSelectedText("*", "*")
+        }
+        binding.btnStrike.setOnClickListener {
+            formatSelectedText("~~", "~~")
+        }
+        binding.btnHeader.setOnClickListener {
+            formatHeader()
+        }
+    }
+
+    private fun formatSelectedText(prefix: String, suffix: String) {
+        val editText = binding.editTextContent
+        val start = editText.selectionStart
+        val end = editText.selectionEnd
+        if (start < 0 || end < 0) return
+        val text = editText.text
+        val selected = text.substring(start, end)
+        val newText = prefix + selected + suffix
+        text.replace(start, end, newText)
+        editText.setSelection(start + newText.length)
+    }
+
+    private fun formatHeader() {
+        val editText = binding.editTextContent
+        val start = editText.selectionStart
+        val end = editText.selectionEnd
+        if (start < 0 || end < 0) return
+        val text = editText.text
+        val selected = text.substring(start, end)
+        val lines = selected.lines()
+        val newText = lines.joinToString("\n") { line ->
+            if (line.startsWith("# ")) line else "# $line"
+        }
+        text.replace(start, end, newText)
+        editText.setSelection(start + newText.length)
+    }
 }

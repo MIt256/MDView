@@ -2,10 +2,10 @@ package com.ex.mdview.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.ex.mdview.domain.repository.MarkdownRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
-import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStreamReader
@@ -59,28 +59,6 @@ class MarkdownRepositoryImpl(
                     return@withContext reader.readText()
                 }
             } ?: throw FileNotFoundException("Файл не найден по URI: $uri")
-        }
-
-    /**
-     * Сохраняет предоставленное содержимое Markdown в новый локальный файл.
-     * Генерирует уникальное имя файла.
-     * @param content Строка с содержимым Markdown для сохранения.
-     * @throws IOException В случае проблем при записи в файл.
-     */
-    override suspend fun saveNewMarkdownContent(content: String): Unit =
-        withContext(Dispatchers.IO) {
-            val fileName =
-                "new_markdown_document_${System.currentTimeMillis()}.md"
-            val outputDir = context.filesDir
-            val file = File(outputDir, fileName)
-
-            try {
-                file.writeText(content)
-            } catch (e: Exception) {
-                throw IOException(
-                    "Error saving new file: ${e.localizedMessage ?: "Unknown error"}", e
-                )
-            }
         }
 
     /**

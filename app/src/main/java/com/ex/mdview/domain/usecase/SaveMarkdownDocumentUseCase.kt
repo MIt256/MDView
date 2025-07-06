@@ -1,6 +1,7 @@
 package com.ex.mdview.domain.usecase
 
-import com.ex.mdview.data.repository.MarkdownRepository
+import android.net.Uri
+import com.ex.mdview.domain.repository.MarkdownRepository
 import com.ex.mdview.domain.model.MarkdownSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.flow
  * которая предоставляет методы для доступа к данным.
  */
 class SaveMarkdownDocumentUseCase(
-    private val markdownRepository: MarkdownRepository
+    private val markdownRepository: MarkdownRepository,
 ) {
     /**
      * Сохраняет [content] Markdown.
@@ -24,12 +25,9 @@ class SaveMarkdownDocumentUseCase(
      * Если null или [MarkdownSource.Url], сохраняется как новый файл.
      * @return [Flow] с [Result] операции сохранения.
      */
-    operator fun invoke(content: String, targetSource: MarkdownSource? = null): Flow<Result<Unit>> = flow {
+    operator fun invoke(content: String, uri: Uri): Flow<Result<Unit>> = flow {
         try {
-            when (targetSource) {
-                is MarkdownSource.LocalFile -> markdownRepository.saveMarkdownContentToFile(content, targetSource.uri)
-                else -> markdownRepository.saveNewMarkdownContent(content)
-            }
+            markdownRepository.saveMarkdownContentToFile(content, uri)
             emit(Result.success(Unit))
         } catch (e: Exception) {
             emit(Result.failure(e))

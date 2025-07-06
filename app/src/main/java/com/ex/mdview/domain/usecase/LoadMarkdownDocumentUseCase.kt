@@ -1,6 +1,6 @@
 package com.ex.mdview.domain.usecase
 
-import com.ex.mdview.data.repository.MarkdownRepository
+import com.ex.mdview.domain.repository.MarkdownRepository
 import com.ex.mdview.domain.model.MarkdownSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

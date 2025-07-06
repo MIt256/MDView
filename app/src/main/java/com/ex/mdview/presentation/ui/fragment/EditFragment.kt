@@ -1,10 +1,12 @@
 package com.ex.mdview.presentation.ui.fragment
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -91,8 +93,22 @@ class EditFragment : Fragment() {
         binding.saveButton.setOnClickListener {
             val editedContent = binding.editTextContent.text.toString()
             sharedViewModel.setContent(editedContent)
-            sharedViewModel.saveCurrentDocument()
-            findNavController().popBackStack()
+            if (sharedViewModel.isCurrentDocumentLocal()) {
+                sharedViewModel.saveCurrentDocument()
+                findNavController().popBackStack()
+            } else {
+                createFileLauncher.launch("new_markdown.md")
+            }
         }
     }
+
+    private val createFileLauncher =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri: Uri? ->
+            uri?.let {
+                val editedContent = binding.editTextContent.text.toString()
+                sharedViewModel.setContent(editedContent)
+                sharedViewModel.saveCurrentDocument(it)
+                findNavController().popBackStack()
+            }
+        }
 }

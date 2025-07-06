@@ -40,7 +40,7 @@ class EditFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         return inflater.inflate(R.layout.fragment_edit, container, false)
     }
@@ -48,6 +48,11 @@ class EditFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        observeViewModel()
+        setupListeners()
+    }
+
+    private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sharedViewModel.documentContent.collectLatest { content ->
@@ -62,23 +67,7 @@ class EditFragment : Fragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.operationStatus.collectLatest { status ->
-                        when (status) {
-                            is OperationStatus.Idle -> {
-                                binding.saveButton.isEnabled = true
-                            }
-
-                            is OperationStatus.Loading -> {
-                                binding.saveButton.isEnabled = false
-                            }
-
-                            is OperationStatus.Success -> {
-                                binding.saveButton.isEnabled = true
-                            }
-
-                            is OperationStatus.Error -> {
-                                binding.saveButton.isEnabled = true
-                            }
-                        }
+                        binding.saveButton.isEnabled = status !is OperationStatus.Loading
                     }
                 }
                 launch {
@@ -86,10 +75,11 @@ class EditFragment : Fragment() {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
-
             }
         }
+    }
 
+    private fun setupListeners() {
         binding.saveButton.setOnClickListener {
             val editedContent = binding.editTextContent.text.toString()
             sharedViewModel.setContent(editedContent)
@@ -97,7 +87,7 @@ class EditFragment : Fragment() {
                 sharedViewModel.saveCurrentDocument()
                 findNavController().popBackStack()
             } else {
-                createFileLauncher.launch("new_markdown.md")
+                createFileLauncher.launch(getString(R.string.default_markdown_filename))
             }
         }
     }

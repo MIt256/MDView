@@ -11,4 +11,7 @@
     <string name="markdown_here">Markdown здесь...</string>
     <string name="markdown_view_text">Загрузите или введите Markdown</string>
     <string name="status_description">status</string>
+    <string name="default_markdown_filename">new_markdown.md</string>
+    <string name="select_md_file_error">Выберите файл с расширением .md</string>
+    <string name="enter_url_error">Введите URL</string>
 </resources>

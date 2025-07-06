@@ -5,12 +5,15 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.viewbinding.ViewBinding
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
+/**
+ * Делегат для работы с ViewBinding в Fragment и Activity.
+ * Автоматически очищает binding при уничтожении View.
+ */
 class ViewBindingDelegate<T : ViewBinding>(
     val fragment: Fragment,
     val bind: (View) -> T
